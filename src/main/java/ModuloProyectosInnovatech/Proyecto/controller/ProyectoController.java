@@ -31,11 +31,14 @@ public class ProyectoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Proyecto> getProyectoById(@PathVariable Integer id) {
-        Proyecto proyecto = proyectoService.getProyectoById(id);
-        if (proyecto == null) {
+        try {
+            // Intentamos buscar el proyecto. Si existe, devolvemos 200 OK
+            Proyecto proyecto = proyectoService.getProyectoById(id);
+            return ResponseEntity.ok(proyecto); 
+        } catch (RuntimeException e) {
+            // Si el servicio lanza la excepción ydevolvemos 404 Not Found
             return ResponseEntity.notFound().build(); 
         }
-        return ResponseEntity.ok(proyecto); 
     }
     
     @PostMapping
@@ -47,7 +50,11 @@ public class ProyectoController {
     @PutMapping("/{id}")
     public ResponseEntity<Proyecto> modificar(@PathVariable Integer id,
     @RequestBody ProyectoDTO dto) {
-    return ResponseEntity.ok(proyectoService.modificar(id, dto));
+        try {
+            return ResponseEntity.ok(proyectoService.modificar(id, dto));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
