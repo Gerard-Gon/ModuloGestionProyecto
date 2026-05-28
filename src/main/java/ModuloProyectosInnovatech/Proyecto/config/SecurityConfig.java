@@ -14,7 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableWebSecurity
 public class SecurityConfig {
 
-   
+    //secret_key personal del grupo
     @Value("${GATEWAY_SECRET:local_test_back}")
     private String secretoCompartido;
 

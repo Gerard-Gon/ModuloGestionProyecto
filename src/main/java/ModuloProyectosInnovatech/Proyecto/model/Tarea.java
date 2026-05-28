@@ -30,7 +30,10 @@ public class Tarea {
     private String descripcionTareas;
 
     @Column(nullable = false)
-    private String estado;
+    private Boolean estado;
+
+    @Column(nullable = false)
+    private String progreso;
 
     @ManyToOne
     @JoinColumn(name="proyecto_id",nullable = false)
