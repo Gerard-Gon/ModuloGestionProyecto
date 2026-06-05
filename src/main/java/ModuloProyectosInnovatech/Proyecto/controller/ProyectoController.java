@@ -14,15 +14,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import ModuloProyectosInnovatech.Proyecto.dto.ProyectoConJefeDTO;
 import ModuloProyectosInnovatech.Proyecto.dto.ProyectoDTO;
+import ModuloProyectosInnovatech.Proyecto.dto.UsuarioExternoDTO;
 import ModuloProyectosInnovatech.Proyecto.model.Proyecto;
 import ModuloProyectosInnovatech.Proyecto.service.ProyectoService;
+import ModuloProyectosInnovatech.Proyecto.service.UsuarioClientService;
 
 @RestController
 @RequestMapping("/api/v1/proyectos")
 public class ProyectoController {
     @Autowired
     private ProyectoService proyectoService;
+
+    @Autowired
+    private UsuarioClientService usuarioClientService;
 
     @GetMapping
     public ResponseEntity<List<Proyecto>> listar() {
@@ -61,6 +67,22 @@ public class ProyectoController {
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
     proyectoService.eliminar(id);
     return ResponseEntity.noContent().build();
-    }   
-    
+    }
+
+    // Endpoint enriquecido: devuelve el proyecto junto con los datos del jefe
+    // obtenidos del microservicio externo de Usuarios
+    @GetMapping("/{id}/detalle")
+    public ResponseEntity<ProyectoConJefeDTO> getDetalle(@PathVariable Integer id) {
+        try {
+            Proyecto proyecto = proyectoService.getProyectoById(id);
+
+            // Consulta el microservicio externo; puede devolver null si está caído
+            UsuarioExternoDTO jefe = usuarioClientService.obtenerUsuarioPorId(proyecto.getJefeId());
+
+            return ResponseEntity.ok(new ProyectoConJefeDTO(proyecto, jefe));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 }
