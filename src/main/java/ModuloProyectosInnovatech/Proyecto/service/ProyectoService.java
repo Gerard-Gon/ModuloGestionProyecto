@@ -4,16 +4,33 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import ModuloProyectosInnovatech.Proyecto.dto.ProyectoDTO;
 import ModuloProyectosInnovatech.Proyecto.model.Proyecto;
+import ModuloProyectosInnovatech.Proyecto.repository.AsignacionTareaRepository;
+import ModuloProyectosInnovatech.Proyecto.repository.InformeRepository;
 import ModuloProyectosInnovatech.Proyecto.repository.ProyectoRepository;
+import ModuloProyectosInnovatech.Proyecto.repository.RegistroHorasRepository;
+import ModuloProyectosInnovatech.Proyecto.repository.TareaRepository;
 
 @Service
 public class ProyectoService {
 
     @Autowired
     private ProyectoRepository proyectoRepository;
+
+    @Autowired
+    private TareaRepository tareaRepository;
+
+    @Autowired
+    private InformeRepository informeRepository;
+
+    @Autowired
+    private AsignacionTareaRepository asignacionTareaRepository;
+
+    @Autowired
+    private RegistroHorasRepository registroHorasRepository;
 
     // Listar todos los proyectos
     public List<Proyecto> listarTodos() {
@@ -48,12 +65,27 @@ public class ProyectoService {
         }).orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
     }
 
-    // Borrado lógico: Cambia el estado a false en lugar de eliminar
+    // Borrado lógico en cascada (optimizado, evita el problema N+1):
+    // 1. Desactiva en masa los datos hijos (Informe, AsignacionTarea, RegistroHoras)
+    // 2. Desactiva todas las tareas del proyecto en masa
+    // 3. Desactiva el proyecto
+    // Todo dentro de una única transacción atómica (@Transactional)
+    @Transactional
     public void eliminar(Integer id) {
         proyectoRepository.findById(id).ifPresent(p -> {
-        p.setActivo(false); // Cambiamos el estado a inactivo
-        proyectoRepository.save(p); // Guardamos el cambio
+            // Paso 1: Desactivar hijos de las tareas en una sola query cada uno
+            informeRepository.desactivarPorProyecto(id);
+            asignacionTareaRepository.desactivarPorProyecto(id);
+            registroHorasRepository.desactivarPorProyecto(id);
+
+            // Paso 2: Desactivar todas las tareas del proyecto en una sola query
+            tareaRepository.desactivarPorProyecto(id);
+
+            // Paso 3: Desactivar el proyecto
+            p.setActivo(false);
+            proyectoRepository.save(p);
         });
     }
     
 }
+
